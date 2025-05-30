@@ -1,0 +1,33 @@
+{
+    "name": "initiumlv/jumis-api",
+    "type": "library",
+    "description": "Laravel package for interacting with Jumis API",
+    "keywords": ["laravel", "jumis", "api"],
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Initium\\Jumis\\Api\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Kristians Jaunzems",
+            "email": "kristians@initium.lv"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^12.0",
+        "illuminate/http": "^12.0",
+        "illuminate/log": "^12.0",
+        "illuminate/console": "^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Initium\\Jumis\\Api\\JumisServiceProvider"
+            ]
+        }
+    }
+}
