@@ -25,8 +25,7 @@ class PublishConfigCommand extends Command
      */
     public function handle(): int
     {
-        $this->call('vendor:publish', [
-            '--provider' => 'Initium\Jumis\Api\JumisServiceProvider',
+        $this->call('vendor:publish', ['--provider' => 'Initium\Jumis\Api\JumisServiceProvider',
             '--tag' => 'config'
         ]);
 

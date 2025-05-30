@@ -5,7 +5,7 @@ A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 ## Requirements
 
 - PHP 8.1 or higher
-- Laravel 10.x (for Laravel integration)
+- Laravel 10.x 
 - Composer
 
 ## Installation
@@ -16,9 +16,9 @@ A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 composer require initiumlv/jumis-api
 ```
 
-### Laravel Integration
+### Laravel Integration (Optional)
 
-After installing the package, publish the configuration file:
+If you are using Laravel, you can publish the configuration file:
 
 ```bash
 php artisan vendor:publish --provider="Initium\Jumis\Api\JumisApiServiceProvider"
@@ -30,93 +30,60 @@ This will create a `config/jumis.php` file in your config directory.
 
 ### Environment Variables
 
-Add the following to your `.env` file:
+Add the following to your `.env` file. For standalone usage, you'll need to load these variables manually (e.g., using a library like `vlucas/phpdotenv`).
 
 ```env
-JUMIS_API_URL=https://your-jumis-instance.com/api
-JUMIS_API_USERNAME=your_username
-JUMIS_API_PASSWORD=your_password
-JUMIS_API_VERSION=TJ5.5.101
+JUMIS_API_URL=
+JUMIS_API_USERNAME=
+JUMIS_API_PASSWORD=
+JUMIS_API_DATABASE=
+JUMIS_API_KEY=
 ```
 
-### Configuration File
+### Configuration File (Laravel)
 
-The published configuration file (`config/jumis.php`) contains the following options:
+The published configuration file (`config/jumis.php`) for Laravel allows you to set your API credentials and other settings. It typically looks like this, based on the provided `config/jumis.php`:
 
 ```php
+<?php
+
 return [
     /*
     |--------------------------------------------------------------------------
-    | Jumis API URL
+    | Jumis API Configuration
     |--------------------------------------------------------------------------
     |
-    | The base URL of your Jumis API instance.
+    | Here you may configure your settings for the Jumis API integration.
     |
     */
-    'url' => env('JUMIS_API_URL'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Jumis API Credentials
-    |--------------------------------------------------------------------------
-    |
-    | Your Jumis API username and password.
-    |
-    */
+    'url' => env('JUMIS_API_URL', 'https://vadiba.mansjumis.lv/cloudapi/JumisImportExportService.ImportExportService.svc'),
+
     'username' => env('JUMIS_API_USERNAME'),
     'password' => env('JUMIS_API_PASSWORD'),
+    'database' => env('JUMIS_API_DATABASE'),
+    'apikey' => env('JUMIS_API_KEY'),
 
     /*
     |--------------------------------------------------------------------------
-    | Jumis API Version
+    | API Versions per Block
     |--------------------------------------------------------------------------
     |
-    | The version of the Jumis API you are using.
+    | You can specify different API request versions for different data blocks.
+    | The ApiService can then be adapted to use these versions accordingly.
     |
     */
-    'version' => env('JUMIS_API_VERSION', 'TJ5.5.101'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Structure Type
-    |--------------------------------------------------------------------------
-    |
-    | The default structure type for API requests (Tree or Sheet).
-    |
-    */
-    'default_structure' => 'Tree',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Request Timeout
-    |--------------------------------------------------------------------------
-    |
-    | The timeout in seconds for API requests.
-    |
-    */
-    'timeout' => 30,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Retry Attempts
-    |--------------------------------------------------------------------------
-    |
-    | Number of times to retry failed requests.
-    |
-    */
-    'retry_attempts' => 3,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Retry Delay
-    |--------------------------------------------------------------------------
-    |
-    | Delay in seconds between retry attempts.
-    |
-    */
-    'retry_delay' => 1,
+    'versions' => [
+        'Product' => 'TJ5.5.101',
+        'Partner' => 'TJ7.0.112',
+        'FinancialDoc' => 'TJ7.0.112',
+        'StoreDoc' => 'TJ5.5.125',
+    ],
 ];
 ```
+
+Make sure your `.env` file has the corresponding `JUMIS_API_URL`, `JUMIS_API_USERNAME`, `JUMIS_API_PASSWORD`, `JUMIS_API_DATABASE`, and `JUMIS_API_KEY` variables.
+The `versions` in the config file provide defaults if the `ApiService` is set up to use them and they are not overridden elsewhere (e.g., by direct calls to `setDocumentVersion` or `setRequestVersion` in `ApiService`).
 
 ### Service Provider
 
@@ -142,88 +109,18 @@ If you want to use the facade, add it to your `config/app.php`:
 
 ## Usage
 
-### Basic Usage
-
-```php
-use Initium\Jumis\Api\ApiService;
-
-$api = new ApiService();
-
-// Read data
-$response = $api->read(
-    Block::Product,
-    ['ProductCode', 'ProductName', 'Price'],
-    [new FilterEqual('ProductCode', 'PROD001')]
-);
-
-// Insert data
-$response = $api->insert(
-    Block::Product,
-    $xmlData,
-    'Tree'
-);
-
-// Update data
-$response = $api->update(
-    Block::Product,
-    $xmlData,
-    'Tree'
-);
-
-// Delete data
-$response = $api->delete(
-    Block::Product,
-    $xmlData,
-    'Tree'
-);
-```
-
 ### Using Facade (Laravel)
 
 ```php
 use Initium\Jumis\Api\Facades\JumisApi;
 
 $response = JumisApi::read(
-    Block::Product,
-    ['ProductCode', 'ProductName', 'Price'],
-    [new FilterEqual('ProductCode', 'PROD001')]
+    'Product',
+    ['ProductCode', 'ProductName'],
+    //[new FilterEqual('ProductCode', 'PROD001')]
 );
 ```
 
-### Dependency Injection (Laravel)
-
-```php
-use Initium\Jumis\Api\ApiService;
-
-class YourController extends Controller
-{
-    public function __construct(
-        private readonly ApiService $api
-    ) {}
-
-    public function index()
-    {
-        $response = $this->api->read(
-            Block::Product,
-            ['ProductCode', 'ProductName', 'Price'],
-            [new FilterEqual('ProductCode', 'PROD001')]
-        );
-    }
-}
-```
-
-## Available Blocks
-
-The API supports the following data blocks:
-
-- `Block::Product` - Products
-- `Block::Partner` - Business partners (customers/suppliers)
-- `Block::StoreDoc` - Store documents (purchases/sales)
-- `Block::FinancialDoc` - Financial documents (invoices/payments)
-- `Block::Warehouse` - Warehouses
-- `Block::Currency` - Currencies
-- `Block::VATRate` - VAT rates
-- `Block::AccountingSchema` - Accounting schemas
 
 ## Filter Types
 
@@ -259,211 +156,21 @@ Greater than comparison:
 new FilterGreaterThan('Quantity', 0)
 ```
 
-### FilterTree
-Tree-based filtering with optional child inclusion:
-```php
-new FilterTree('CategoryID', 1, true) // true to include children
-```
-
-### FilterDimension
-Dimension-based filtering:
-```php
-new FilterDimension('DimensionID', 'CostCenter', 'CC001', true)
-```
-
-## XML Building
-
-### Simple Data Block
-```php
-$xml = $api->buildDataBlock(
-    'Product',
-    [
-        'ProductCode' => 'PROD001',
-        'ProductName' => 'Test Product',
-        'Price' => 19.99
-    ],
-    'P1'  // Tag ID
-);
-```
-
-### Nested Data Block
-```php
-$xml = $api->buildNestedBlock(
-    'StoreDoc',
-    'StoreDocLine',
-    [
-        // Document header
-        'DocType' => 'Purchase',
-        'DocNumber' => 'PO-001',
-        // Document line
-        'ProductCode' => 'PROD001',
-        'Quantity' => 10
-    ],
-    'SD1',  // Document tag ID
-    'SDL1'  // Line tag ID
-);
-```
-
-## Document Statuses
-
-The library provides a `DocumentStatus` enum for handling document statuses in a type-safe way:
-
-```php
-use Initium\Jumis\Api\Enums\DocumentStatus;
-
-// Get status label
-$label = DocumentStatus::APPROVED->label();  // Returns "Apstiprināts"
-
-// Get status description
-$description = DocumentStatus::APPROVED->description();  // Returns "Document has been approved"
-
-// Compare statuses
-if ($documentStatus === DocumentStatus::APPROVED) {
-    // Document is approved
-}
-```
-
-### Available Statuses
-- `DocumentStatus::STARTED` (1) - Iesākts (Started)
-- `DocumentStatus::ENTERED` (2) - Ievadīts (Entered)
-- `DocumentStatus::APPROVED` (5) - Apstiprināts (Approved)
-- `DocumentStatus::POSTED` (6) - Kontēts (Posted)
-
-## Examples
-
-### Partner Operations
-```php
-// Create partner
-$partnerXml = $api->buildDataBlock(
-    'Partner',
-    [
-        'PartnerCode' => 'CUST001',
-        'PartnerName' => 'Test Customer',
-        'PartnerType' => 'Customer',
-        'VATNumber' => 'LV12345678901'
-    ],
-    'P1'
-);
-
-$response = $api->insert(Block::Partner, $partnerXml, 'Tree');
-```
-
-### Store Document Operations
-```php
-use Initium\Jumis\Api\Enums\DocumentStatus;
-
-// Create store document
-$storeDocXml = $api->buildNestedBlock(
-    'StoreDoc',
-    'StoreDocLine',
-    [
-        'DocType' => 'Purchase',
-        'DocNumber' => 'PO-001',
-        'DocDate' => date('Y-m-d'),
-        'ProductCode' => 'PROD001',
-        'Quantity' => 10
-    ],
-    'SD1',
-    'SDL1'
-);
-
-$response = $api->insert(Block::StoreDoc, $storeDocXml, 'Tree');
-
-// Update document status to approved
-$updateXml = $api->buildDataBlock(
-    'StoreDoc',
-    [
-        'StoreDocID' => $docId,
-        'DocStatus' => DocumentStatus::APPROVED->value  // Using enum value
-    ],
-    'SD1'
-);
-
-$response = $api->update(Block::StoreDoc, $updateXml, 'Tree');
-
-// Check document status
-$docResponse = $api->read(
-    Block::StoreDoc,
-    ['DocStatus'],
-    [new FilterEqual('StoreDocID', $docId)]
-);
-
-if ($docResponse && $docResponse['DocStatus'] === DocumentStatus::APPROVED->value) {
-    echo "Document is " . DocumentStatus::APPROVED->label();
-}
-```
-
-### Financial Document Operations
-```php
-// Create financial document
-$financialDocXml = $api->buildNestedBlock(
-    'FinancialDoc',
-    'FinancialDocLine',
-    [
-        'DocType' => 'Invoice',
-        'DocNumber' => 'INV-001',
-        'DocDate' => date('Y-m-d'),
-        'AccountingSchemaFieldName' => 'Sales',
-        'LineAmount' => 199.90
-    ],
-    'FD1',
-    'FDL1'
-);
-
-$response = $api->insert(Block::FinancialDoc, $financialDocXml, 'Tree');
-```
 
 ## Error Handling
 
-The API methods return `null` on failure. Always check the response:
+The API methods (`read`, `insert`) in `ApiService.php` will return a parsed array from the XML response.
+If `parseXmlResponse` encounters an empty or invalid raw string before attempting to parse XML, it may return `null`.
+If XML parsing itself fails, Exception is thrown.
+Network issues or other Guzzle client errors can also throw exceptions. Always wrap API calls in try-catch blocks.
 
 ```php
-$response = $api->read(Block::Product, ['ProductCode'], []);
-if ($response === null) {
-    // Handle error
+try {
+    $response = $api->read('Product', ['ProductCode']);
+
+} catch (\GuzzleHttp\Exception\GuzzleException $e) { // Catch Guzzle HTTP errors
+    echo "HTTP Request Error: " . $e->getMessage() . "\n";
+} catch (\Exception $e) { // Catch any other general errors
+    echo "An unexpected error occurred: " . $e->getMessage() . "\n";
 }
 ```
-
-## Request Options
-
-All API methods support the following optional parameters:
-
-- `structureType` - 'Tree' or 'Sheet' (default: 'Tree')
-- `requestId` - Custom request identifier
-- `readAll` - Whether to read all records (default: false)
-- `returnId` - Whether to return IDs in response (default: false)
-- `returnSync` - Whether to return sync information (default: false)
-
-Example:
-```php
-$response = $api->read(
-    Block::Product,
-    ['ProductCode'],
-    [],
-    'Tree',
-    null,
-    'CustomRequestID',
-    true,  // readAll
-    true,  // returnId
-    true   // returnSync
-);
-```
-
-## Best Practices
-
-1. Always use proper error handling
-2. Use meaningful request IDs for tracking
-3. Use appropriate filter types for queries
-4. Include only necessary fields in read operations
-5. Use Tree structure for hierarchical data
-6. Use Sheet structure for flat data lists
-7. Verify document status changes
-8. Keep tag IDs unique within a request
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.

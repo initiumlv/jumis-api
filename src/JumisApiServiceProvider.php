@@ -11,16 +11,16 @@ class JumisApiServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(
-            __DIR__.'/../config/jumis.php', 'jumis'
-        );
+        $this->mergeConfigFrom(__DIR__.'/../config/jumis.php', 'jumis');
 
         $this->app->singleton(ApiService::class, function ($app) {
             return new ApiService(
                 config('jumis.url'),
                 config('jumis.username'),
                 config('jumis.password'),
-                config('jumis.version')
+                config('jumis.database'),
+                config('jumis.apikey'),
+                config('jumis.guzzle')
             );
         });
     }

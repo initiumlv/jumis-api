@@ -6,7 +6,7 @@ class FilterEqual extends Filter
 {
     public function __construct(string $name, mixed $value, ?string $applyMode = null)
     {
-        parent::__construct($name, 'Equal', $applyMode);
+        parent::__construct($name, self::TYPE_EQUAL, $applyMode);
         $this->params[] = $value;
     }
 

@@ -10,23 +10,38 @@ return [
     |
     */
 
-    // API URL (required)
-    'url' => env('JUMIS_API_URL', 'https://api.jumis.lv'),
+    'url' => env('JUMIS_API_URL', 'https://vadiba.mansjumis.lv/cloudapi/JumisImportExportService.ImportExportService.svc'),
 
-    // API Credentials (required)
     'username' => env('JUMIS_API_USERNAME'),
     'password' => env('JUMIS_API_PASSWORD'),
+    'database' => env('JUMIS_API_DATABASE'),
+    'apikey' => env('JUMIS_API_KEY'),
 
-    // API Version (required)
-    'version' => env('JUMIS_API_VERSION', '1.0'),
+    /*
+    |--------------------------------------------------------------------------
+    | Guzzle Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure your settings for the Guzzle requests.
+    |
+    */
+    'guzzle' => [
 
-    // Default Structure Type (optional)
-    'structure_type' => env('JUMIS_STRUCTURE_TYPE', 'Tree'),
+    ],
 
-    // Request Timeout in seconds (optional)
-    'timeout' => env('JUMIS_TIMEOUT', 30),
-
-    // Retry Configuration (optional)
-    'retry_attempts' => env('JUMIS_RETRY_ATTEMPTS', 3),
-    'retry_delay' => env('JUMIS_RETRY_DELAY', 1000), // milliseconds
-]; 
+    /*
+    |--------------------------------------------------------------------------
+    | API Versions per Block
+    |--------------------------------------------------------------------------
+    |
+    | You can specify different API request versions for different data blocks.
+    | The ApiService can then be adapted to use these versions accordingly.
+    |
+    */
+    'versions' => [
+        'Product' => 'TJ5.5.101',
+        'Partner' => 'TJ7.0.112',
+        'FinancialDoc' => 'TJ7.0.112',
+        'StoreDoc' => 'TJ5.5.125',
+    ],
+];

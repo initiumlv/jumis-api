@@ -5,12 +5,8 @@ namespace Initium\Jumis\Api\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static mixed read(string $block, array $fields, array $filters = [], string $structureType = 'Tree', ?string $requestId = null, bool $readAll = false, bool $returnId = false, bool $returnSync = false)
- * @method static mixed insert(string $block, string $xmlData, string $structureType = 'Tree', ?string $requestId = null)
- * @method static mixed update(string $block, string $xmlData, string $structureType = 'Tree', ?string $requestId = null)
- * @method static mixed delete(string $block, string $xmlData, string $structureType = 'Tree', ?string $requestId = null)
- * @method static string buildDataBlock(string $blockName, array $data, string $tagId)
- * @method static string buildNestedBlock(string $blockName, string $lineBlockName, array $data, string $tagId, string $lineTagId)
+ * @method static mixed read(string $table, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
+ * @method static mixed insert(string $table, array $fields, ?string $requestId = null): mixed
  *
  * @see \Initium\Jumis\Api\ApiService
  */
