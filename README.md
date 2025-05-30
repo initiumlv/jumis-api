@@ -2,15 +2,35 @@
 
 A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 
+## Requirements
+
+- PHP 8.1 or higher
+- Laravel 10.x (for Laravel integration)
+- Composer
+
 ## Installation
 
+### Basic Installation
+
 ```bash
-composer require initium/jumis-api
+composer require initiumlv/jumis-api
 ```
+
+### Laravel Integration
+
+After installing the package, publish the configuration file:
+
+```bash
+php artisan vendor:publish --provider="Initium\Jumis\Api\JumisApiServiceProvider"
+```
+
+This will create a `config/jumis.php` file in your config directory.
 
 ## Configuration
 
-Create a `.env` file in your project root with the following settings:
+### Environment Variables
+
+Add the following to your `.env` file:
 
 ```env
 JUMIS_API_URL=https://your-jumis-instance.com/api
@@ -19,7 +39,110 @@ JUMIS_API_PASSWORD=your_password
 JUMIS_API_VERSION=TJ5.5.101
 ```
 
-## Basic Usage
+### Configuration File
+
+The published configuration file (`config/jumis.php`) contains the following options:
+
+```php
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Jumis API URL
+    |--------------------------------------------------------------------------
+    |
+    | The base URL of your Jumis API instance.
+    |
+    */
+    'url' => env('JUMIS_API_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Jumis API Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Your Jumis API username and password.
+    |
+    */
+    'username' => env('JUMIS_API_USERNAME'),
+    'password' => env('JUMIS_API_PASSWORD'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Jumis API Version
+    |--------------------------------------------------------------------------
+    |
+    | The version of the Jumis API you are using.
+    |
+    */
+    'version' => env('JUMIS_API_VERSION', 'TJ5.5.101'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Structure Type
+    |--------------------------------------------------------------------------
+    |
+    | The default structure type for API requests (Tree or Sheet).
+    |
+    */
+    'default_structure' => 'Tree',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Request Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The timeout in seconds for API requests.
+    |
+    */
+    'timeout' => 30,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retry Attempts
+    |--------------------------------------------------------------------------
+    |
+    | Number of times to retry failed requests.
+    |
+    */
+    'retry_attempts' => 3,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retry Delay
+    |--------------------------------------------------------------------------
+    |
+    | Delay in seconds between retry attempts.
+    |
+    */
+    'retry_delay' => 1,
+];
+```
+
+### Service Provider
+
+The package automatically registers its service provider in Laravel applications. If you need to register it manually, add the following to your `config/app.php`:
+
+```php
+'providers' => [
+    // ...
+    Initium\Jumis\Api\JumisApiServiceProvider::class,
+],
+```
+
+### Facade (Optional)
+
+If you want to use the facade, add it to your `config/app.php`:
+
+```php
+'aliases' => [
+    // ...
+    'JumisApi' => Initium\Jumis\Api\Facades\JumisApi::class,
+],
+```
+
+## Usage
+
+### Basic Usage
 
 ```php
 use Initium\Jumis\Api\ApiService;
@@ -53,6 +176,40 @@ $response = $api->delete(
     $xmlData,
     'Tree'
 );
+```
+
+### Using Facade (Laravel)
+
+```php
+use Initium\Jumis\Api\Facades\JumisApi;
+
+$response = JumisApi::read(
+    Block::Product,
+    ['ProductCode', 'ProductName', 'Price'],
+    [new FilterEqual('ProductCode', 'PROD001')]
+);
+```
+
+### Dependency Injection (Laravel)
+
+```php
+use Initium\Jumis\Api\ApiService;
+
+class YourController extends Controller
+{
+    public function __construct(
+        private readonly ApiService $api
+    ) {}
+
+    public function index()
+    {
+        $response = $this->api->read(
+            Block::Product,
+            ['ProductCode', 'ProductName', 'Price'],
+            [new FilterEqual('ProductCode', 'PROD001')]
+        );
+    }
+}
 ```
 
 ## Available Blocks
