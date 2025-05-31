@@ -1,6 +1,7 @@
 {
   "name": "initiumlv/jumis-api",
   "description": "PHP library for integrating with Tildes Jumis ERP system's XML-based API",
+  "version": "1.0.0",
   "type": "library",
   "license": "MIT",
   "autoload": {
