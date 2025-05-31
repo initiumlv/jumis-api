@@ -19,9 +19,6 @@
       "providers": [
         "Initium\\Jumis\\Api\\JumisApiServiceProvider"
       ],
-      "aliases": {
-        "JumisApi": "Initium\\Jumis\\Api\\Facades\\JumisApi"
-      }
     }
   },
   "require": {
