@@ -7,7 +7,7 @@ use GuzzleHttp\Client;
 use Initium\Jumis\Api\Components\XML;
 
 
-class ApiService
+class JumisAPIService
 {
     protected string $username;
     protected string $password;
@@ -18,6 +18,11 @@ class ApiService
     protected string $requestVersion = 'TJ5.5.101';
 
     protected Client $client;
+
+    public static function make(): JumisAPIService
+    {
+        return new static(config('jumis.url'),config('jumis.username'),config('jumis.password'),config('jumis.database'),config('jumis.apikey'),config('jumis.guzzle'));
+    }
 
     /**
      * ApiService constructor.
@@ -75,7 +80,7 @@ class ApiService
     /**
      * Sends a 'Read' operation request to the API.
      *
-     * @param string $table The name of the table to read from.
+     * @param string $dataBlack The name of the datablock to read from.
      * @param array $fields An array of fields to retrieve.
      * @param array $filters An array of filters to apply to the query.
      * @param string|null $requestId An optional request ID.
@@ -84,7 +89,7 @@ class ApiService
      * @return mixed The parsed XML response from the API as an array, or null on failure before parsing.
      * @throws \Exception If there is an error parsing the XML response.
      */
-    public function read(string $table, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
+    public function read(string $dataBlack, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
     {
         $fields = XML::prepareFields($fields);
 
@@ -102,7 +107,7 @@ class ApiService
         }
 
         $attributes = [
-            'Name' => $table,
+            'Name' => $dataBlack,
             'Operation' => 'Read',
             'Version' => $this->requestVersion,
             'Structure' => 'Tree'
@@ -137,16 +142,16 @@ XML;
     /**
      * Sends an 'Insert' operation request to the API.
      *
-     * @param string $table The name of the table to insert into.
+     * @param string $dataBlock The name of the table to insert into.
      * @param array $fields An array of fields and their values to insert.
      * @param string|null $requestId An optional request ID.
      * @return mixed The parsed XML response from the API as an array, or null on failure before parsing.
      * @throws \Exception If there is an error parsing the XML response.
      */
-    public function insert(string $table, array $fields, ?string $requestId = null): mixed
+    public function insert(string $dataBlock, array $fields, ?string $requestId = null): mixed
     {
         $attributes = [
-            'Name' => $table,
+            'Name' => $dataBlock,
             'Operation' => 'Insert',
             'Version' => $this->requestVersion,
             'Structure' => 'Tree'
@@ -157,7 +162,7 @@ XML;
         }
 
         $attributes = XML::prepareAttributes($attributes);
-        $response = XML::buildXmlElements($fields,$table);
+        $response = XML::buildXmlElements($fields,$dataBlock);
 
         $xml = <<<XML
 <?xml version="1.0" ?>

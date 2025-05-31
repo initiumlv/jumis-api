@@ -30,7 +30,7 @@ This will create a `config/jumis.php` file in your config directory.
 
 ### Environment Variables
 
-Add the following to your `.env` file. For standalone usage, you'll need to load these variables manually (e.g., using a library like `vlucas/phpdotenv`).
+Add the following to your `.env` file.
 
 ```env
 JUMIS_API_URL=
@@ -82,9 +82,6 @@ return [
 ];
 ```
 
-Make sure your `.env` file has the corresponding `JUMIS_API_URL`, `JUMIS_API_USERNAME`, `JUMIS_API_PASSWORD`, `JUMIS_API_DATABASE`, and `JUMIS_API_KEY` variables.
-The `versions` in the config file provide defaults if the `ApiService` is set up to use them and they are not overridden elsewhere (e.g., by direct calls to `setDocumentVersion` or `setRequestVersion` in `ApiService`).
-
 ### Service Provider
 
 The package automatically registers its service provider in Laravel applications. If you need to register it manually, add the following to your `config/app.php`:
@@ -96,29 +93,67 @@ The package automatically registers its service provider in Laravel applications
 ],
 ```
 
-### Facade (Optional)
-
-If you want to use the facade, add it to your `config/app.php`:
-
-```php
-'aliases' => [
-    // ...
-    'JumisApi' => Initium\Jumis\Api\Facades\JumisApi::class,
-],
-```
-
 ## Usage
-
-### Using Facade (Laravel)
 
 ```php
 use Initium\Jumis\Api\Facades\JumisApi;
 
-$response = JumisApi::read(
-    'Product',
-    ['ProductCode', 'ProductName'],
-    //[new FilterEqual('ProductCode', 'PROD001')]
-);
+<?php
+
+use Initium\Jumis\Api\JumisAPIService;
+use Initium\Jumis\Api\Filters\FilterEqual;
+
+$api = app(JumisAPIService::class);
+
+$api->setDocumentVersion('TJ5.5.101');
+$api->setRequestVersion('TJ7.0.112');
+
+
+$partnerXml = [
+    [
+        'PartnerCode' => 'COST1',
+        'PartnerName' => 'INITIUM',
+        'PartnerAddress' => [
+            'AddressStreet' => 'Test',
+            'AddressPostalCode' => 'LV-4101',
+            'AddressCity' => 'Test',
+            'AddressCountryCode' => 'LV'
+        ]
+    ],
+];
+
+$insertResponse = $api->insert('Partner', $partnerXml);
+
+$response = $api->read('Partner',['PartnerName','PartnerCode'],[
+    new FilterEqual('PartnerCode', 'COST1')
+]);
+```
+
+Response
+
+```
+[
+  'tjDocument' => [
+    '@attributes' => [
+      'Version' => 'TJ5.5.101',
+    ]
+  ],
+  'tjResponse' => [
+    '@attributes' => [
+      'Name' => 'Partner',
+      'Operation' => 'Read',
+      'Version' => 'TJ7.0.112',
+      'Structure' => 'Tree',
+    ],
+    'Partner' => [
+      'PartnerName' => 'INITIUM',
+      'PartnerCode' => 'COST1',
+    ],
+  ],
+]
+
+
+
 ```
 
 
@@ -167,6 +202,13 @@ Network issues or other Guzzle client errors can also throw exceptions. Always w
 ```php
 try {
     $response = $api->read('Product', ['ProductCode']);
+    
+    if (!empty($response)) {
+        // Do work
+    }
+    else {
+       
+    }
 
 } catch (\GuzzleHttp\Exception\GuzzleException $e) { // Catch Guzzle HTTP errors
     echo "HTTP Request Error: " . $e->getMessage() . "\n";
@@ -174,3 +216,7 @@ try {
     echo "An unexpected error occurred: " . $e->getMessage() . "\n";
 }
 ```
+
+## Documentation
+
+https://atbalsts.mansjumis.lv/hc/lv/articles/6482469051922-Jumis-REST-API-specifik%C4%81cija
