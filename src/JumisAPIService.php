@@ -209,26 +209,12 @@ XML;
     }
 
     /**
-     * Parses the raw XML response string from the API.
+     * Parses the raw JSON response string from the API.
      *
      * @param string $raw The raw response string, potentially JSON-encoded XML.
-     * @return array|null An array representation of the XML, or null if the raw string is empty or not a string.
-     * @throws \Exception If there is an error parsing the XML content.
      */
-    protected function parseXmlResponse(string $raw): ?array {
-        if (str_starts_with($raw, '"')) {
-            $raw = json_decode($raw, true);
-        }
+    protected function parseXmlResponse(string $raw) {
 
-        if (!$raw || !is_string($raw)) {
-            return null;
-        }
-
-        try {
-            $xml = new \SimpleXMLElement($raw);
-            return json_decode(json_encode($xml), true);
-        } catch (\Exception $e) {
-            throw new \Exception('Error parsing Jumis API response error', previous: $e);
-        }
+        return json_decode($raw, true);
     }
 }
