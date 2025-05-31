@@ -5,7 +5,7 @@ A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 ## Requirements
 
 - PHP 8.1 or higher
-- Laravel 10.x 
+- Laravel 12
 - Composer
 
 ## Installation
