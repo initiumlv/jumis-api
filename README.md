@@ -16,7 +16,11 @@ A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 composer require initiumlv/jumis-api
 ```
 
-### Laravel Integration (Optional)
+
+
+## Configuration
+
+### Publishing configuration
 
 If you are using Laravel, you can publish the configuration file:
 
@@ -25,8 +29,6 @@ php artisan vendor:publish --provider="Initium\Jumis\Api\JumisApiServiceProvider
 ```
 
 This will create a `config/jumis.php` file in your config directory.
-
-## Configuration
 
 ### Environment Variables
 
@@ -109,7 +111,7 @@ $api->setDocumentVersion('TJ5.5.101');
 $api->setRequestVersion('TJ7.0.112');
 
 
-$partnerXml = [
+$partners = [
     [
         'PartnerCode' => 'COST1',
         'PartnerName' => 'INITIUM',
@@ -122,39 +124,29 @@ $partnerXml = [
     ],
 ];
 
-$insertResponse = $api->insert('Partner', $partnerXml);
+$insertResponse = $api->insert('Partner', $partners);
 
 $response = $api->read('Partner',['PartnerName','PartnerCode'],[
     new FilterEqual('PartnerCode', 'COST1')
 ]);
 ```
 
-Response
+### Response
 
+#### Read (XML String)
+```
+<?xml version="1.0" encoding="utf-8" ?><dataroot><tjDocument Version="TJ5.5.101"></tjDocument><tjResponse Name="Partner" Operation="Read" Version="TJ7.0.112" Structure="Tree"><PartnerName>Test Customer</PartnerName><PartnerCode>CUST001</PartnerCode></Partner></tjResponse></dataroot>
+```
+#### Insert (Array)
 ```
 [
-  'tjDocument' => [
-    '@attributes' => [
-      'Version' => 'TJ5.5.101',
-    ]
-  ],
-  'tjResponse' => [
-    '@attributes' => [
-      'Name' => 'Partner',
-      'Operation' => 'Read',
-      'Version' => 'TJ7.0.112',
-      'Structure' => 'Tree',
-    ],
-    'Partner' => [
-      'PartnerName' => 'INITIUM',
-      'PartnerCode' => 'COST1',
-    ],
-  ],
+  [
+    "Key" => "ConvertedImportXML"
+    "Value" => "<?xml version="1.0"?><dataroot><tjDocument Version="TJ5.5.101" /><tjRequest Name="Partner" Operation="Insert" Version="TJ7.0.112" Structure="Tree"><Partner TagID="P1"><xPartnerCode>COST1</xPartnerCode><PartnerName>INITIUM</PartnerName><ddsad>dasdas</ddsad><PartnerAddress TagID="PA1"><AddressStreet>Test</AddressStreet><AddressPostalCode>LV-4101</AddressPostalCode><AddressCity>Test</AddressCity><AddressCountryCode>LV</AddressCountryCode></PartnerAddress></Partner></tjRequest></dataroot>"
+  ]
 ]
-
-
-
 ```
+
 
 
 ## Filter Types
@@ -162,42 +154,32 @@ Response
 The library provides several filter types for querying data:
 
 ### FilterEqual
-Exact match filter:
 ```php
 new FilterEqual('ProductCode', 'PROD001')
 ```
-
 ### FilterLike
-SQL LIKE pattern matching:
 ```php
 new FilterLike('ProductName', 'Test%')
 ```
 
 ### FilterBetween
-Range filter:
 ```php
 new FilterBetween('DocDate', '2024-01-01', '2024-12-31')
 ```
 
 ### FilterLessThan
-Less than comparison:
 ```php
 new FilterLessThan('Price', 100)
 ```
 
 ### FilterGreaterThan
-Greater than comparison:
 ```php
 new FilterGreaterThan('Quantity', 0)
 ```
 
-
 ## Error Handling
-
-The API methods (`read`, `insert`) in `ApiService.php` will return a parsed array from the XML response.
-If `parseXmlResponse` encounters an empty or invalid raw string before attempting to parse XML, it may return `null`.
-If XML parsing itself fails, Exception is thrown.
-Network issues or other Guzzle client errors can also throw exceptions. Always wrap API calls in try-catch blocks.
+Always wrap API calls with try-catch blocks to handle HTTP errors or XML parsing issues.
+If response from API encounters an empty or invalid raw string before attempting to parse XML, it will return `null`.
 
 ```php
 try {
