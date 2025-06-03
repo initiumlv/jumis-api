@@ -185,7 +185,7 @@ $partners = [
     'TEST' => 'XXX'
 ];
 
-    $response = $api->insert('Partner', $partners);
+$response = $api->insert('Partner', $partners);
     
 // Response
 // NOTE:
@@ -379,14 +379,32 @@ If response from API encounters an empty or invalid raw string before attempting
 
 ```php
 try {
-    $response = $api->read('Product', ['ProductCode']);
+    $response = $api->insert('Partner', ['PartnerCode' => 'Test']);
     
-    if (!empty($response)) {
+    if (empty($response)) {
+        // No data returned. Invalid API Response.
+    }
+    
+    // Has errors in fields or connection
+    if(count($response > 1)) {
+      
+       if (isset($response['status']) && $response['status'] === 'error') {
+           // Connection error
+       }
+       else {
+           // General field insert error
+       }
+       
+       return;
+    }
+    
+    if (isset($response[0]['Value']) && is_array($response[0]['Value'])) {
         // Do work
     }
-    elseif(count($response > 1)) {
-       // Has errors
+    else {
+        // Unexpected response
     }
+
 
 } catch (\GuzzleHttp\Exception\GuzzleException $e) { 
     echo "HTTP Request Error: " . $e->getMessage() . "\n";

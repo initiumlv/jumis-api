@@ -5,6 +5,7 @@ namespace Initium\Jumis\Api;
 use GuzzleHttp\Client;
 
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Support\Str;
 use Initium\Jumis\Api\Components\XML;
 
 
@@ -211,7 +212,7 @@ XML;
             'json' => $requestData,
         ]);
 
-        return $this->parseResponse($response->getBody()->getContents(), $operation);
+        return $this->parseResponse($response, $operation);
 
     }
 
@@ -221,9 +222,22 @@ XML;
      * @param string $raw The raw response string.
      * @return array The parsed data, always as an array.
      */
-    protected function parseResponse(string $raw, string $operation): array
+    protected function parseResponse($response, string $operation): array
     {
+        $raw = $response->getBody()->getContents();
 
+        if (Str::contains($raw, 'Neizdevās pieslēgties!')) {
+            return [
+                'status' => 'error',
+                'message' => 'Failed to authenticate'
+            ];
+        }
+        if (Str::contains($raw, 'nav datub')) {
+            return [
+                'status' => 'error',
+                'error' => 'Failed to select database'
+            ];
+        }
 
         if (empty($raw)) {
             return [];
@@ -245,7 +259,6 @@ XML;
                 if (is_array($parsedArray)) {
                     $result = $parsedArray;
                 }
-
             }
         } else {
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {

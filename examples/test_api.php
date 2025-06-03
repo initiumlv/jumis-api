@@ -79,9 +79,9 @@ try {
     echo "-------------------------------------\n";
     echo "RAW API RESPONSE:\n";
     echo "-------------------------------------\n";
-    echo var_export($response, true) . "\n";
+    echo print_r($response,true) . "\n";
     echo "-------------------------------------\n";
-    }
-    catch (Exception $e) {
-        echo "Exception: " . $e->getMessage() . "\n";
-    }
+}
+catch (Exception $e) {
+    echo "Exception: " . $e->getMessage() . "\n";
+}
