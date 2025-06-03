@@ -42,7 +42,7 @@ JUMIS_API_DATABASE=
 JUMIS_API_KEY=
 ```
 
-### Configuration File (Laravel)
+### Configuration File
 
 The published configuration file (`config/jumis.php`) for Laravel allows you to set your API credentials and other settings. It typically looks like this, based on the provided `config/jumis.php`:
 
@@ -97,11 +97,9 @@ The package automatically registers its service provider in Laravel applications
 
 ## Usage
 
+### Basic setup
+
 ```php
-use Initium\Jumis\Api\Facades\JumisApi;
-
-<?php
-
 use Initium\Jumis\Api\JumisAPIService;
 use Initium\Jumis\Api\Filters\FilterEqual;
 
@@ -109,7 +107,11 @@ $api = app(JumisAPIService::class);
 
 $api->setDocumentVersion('TJ5.5.101');
 $api->setRequestVersion('TJ7.0.112');
+```
 
+### Valid insert
+
+```php
 
 $partners = [
     [
@@ -124,30 +126,224 @@ $partners = [
     ],
 ];
 
-$insertResponse = $api->insert('Partner', $partners);
+$api->insert('Partner', $partners);
 
-$response = $api->read('Partner',['PartnerName','PartnerCode'],[
-    new FilterEqual('PartnerCode', 'COST1')
+// Response
+
+array (
+  0 =>
+  array (
+    'Key' => 'ConvertedImportXML',
+    'Value' =>
+    array (
+      'tjDocument' =>
+      array (
+        '@attributes' =>
+        array (
+          'Version' => 'TJ5.5.101',
+        ),
+      ),
+      'tjRequest' =>
+      array (
+        '@attributes' =>
+        array (
+          'Name' => 'Partner',
+          'Operation' => 'Insert',
+          'Version' => 'TJ7.0.112',
+          'Structure' => 'Tree',
+        ),
+        'Partner' =>
+        array (
+          '@attributes' =>
+          array (
+            'TagID' => 'P1',
+          ),
+          'PartnerCode' => 'COST1',
+          'PartnerName' => 'INITIUM',
+          'PartnerAddress' =>
+          array (
+            '@attributes' =>
+            array (
+              'TagID' => 'PA1',
+            ),
+            'AddressStreet' => 'Test',
+            'AddressPostalCode' => 'LV-4101',
+            'AddressCity' => 'Test',
+            'AddressCountryCode' => 'LV',
+          ),
+        ),
+      ),
+    ),
+  ),
+)
+```
+
+### Invalid Insert (Dont contain all required data for successful insert)
+
+```php
+$partners = [
+    'TEST' => 'XXX'
+];
+
+    $response = $api->insert('Partner', $partners);
+    
+// Response
+// NOTE:
+// In this case no errors are returned just return has array of send data.
+// There currently is no way to know if API accepted or rejected malformed request for data insert.
+    
+array (
+  0 =>
+  array (
+    'Key' => 'ConvertedImportXML',
+    'Value' =>
+    array (
+      'tjDocument' =>
+      array (
+        '@attributes' =>
+        array (
+          'Version' => 'TJ5.5.101',
+        ),
+      ),
+      'tjRequest' =>
+      array (
+        '@attributes' =>
+        array (
+          'Name' => 'Partner',
+          'Operation' => 'Insert',
+          'Version' => 'TJ7.0.112',
+          'Structure' => 'Tree',
+        ),
+        'Partner' =>
+        array (
+          '@attributes' =>
+          array (
+            'TagID' => 'P1',
+          ),
+          'TEST' => 'XXX',
+        ),
+      ),
+    ),
+  ),
+)
+```
+
+### Invalid Insert (With invalid relationship by name)
+
+```php
+$partnerXml = [
+    [
+        'PartnerCode' => uniqid('PHP_VALID_'),
+        'PartnerName' => 'Test Partner ' . date('Y-m-d H:i:s'),
+        'PartnerType' => 'Čipsis', // Not Valid
+        'PartnerRegistrationNo' => '12345678901',
+        'PartnerAddress' => [
+            'AddressStreet' => 'Test Street 123',
+            'AddressPostalCode' => 'LV-1001',
+            'AddressCity' => 'Riga',
+            'AddressCountryCode' => 'LV'
+        ]
+    ],
+];
+
+
+//Response (Will return multiple items if it has errors)
+
+ array (
+    0 =>
+        array (
+            'Key' => 'ConvertedImportXML',
+            'Value' =>
+                array (
+                    'tjDocument' =>
+                        array (
+                            '@attributes' =>
+                                array (
+                                    'Version' => 'TJ5.5.101',
+                                ),
+                        ),
+                    'tjRequest' =>
+                        array (
+                            '@attributes' =>
+                                array (
+                                    'Name' => 'Partner',
+                                    'Operation' => 'Insert',
+                                    'Version' => 'TJ7.0.112',
+                                    'Structure' => 'Tree',
+                                    'RequestID' => 'InsertReq_1748985344',
+                                ),
+                            'Partner' =>
+                                array (
+                                    '@attributes' =>
+                                        array (
+                                            'TagID' => 'P1',
+                                        ),
+                                    'PartnerCode' => 'PHP_VALID_683f66004bb54',
+                                    'PartnerName' => 'Test Partner 2025-06-03 21:15:44',
+                                    'PartnerType' => 'Čipsis',
+                                    'xx' => 'x',
+                                    'PartnerRegistrationNo' => '12345678901',
+                                    'PartnerAddress' =>
+                                        array (
+                                            '@attributes' =>
+                                                array (
+                                                    'TagID' => 'PA1',
+                                                ),
+                                            'AddressStreet' => 'Test Street 123',
+                                            'AddressPostalCode' => 'LV-1001',
+                                            'AddressCity' => 'Riga',
+                                            'AddressCountryCode' => 'LV',
+                                        ),
+                                ),
+                        ),
+                ),
+        ),
+    1 =>
+        array (
+            'Key' => 'P1',
+            'Value' => 'Čipsis',
+        ),
+)
+
+```
+
+
+#### Read
+
+```php
+
+$api->read('Partner',['PartnerName','PartnerCode'],[
+    new FilterEqual('PartnerName', 'Noliktava (galvenā)')
 ]);
-```
 
-### Response
-
-#### Read (XML String)
+// Response
+array (
+  'tjDocument' =>
+  array (
+    '@attributes' =>
+    array (
+      'Version' => 'TJ5.5.101',
+    ),
+  ),
+  'tjResponse' =>
+  array (
+    '@attributes' =>
+    array (
+      'Name' => 'Partner',
+      'Operation' => 'Read',
+      'Version' => 'TJ7.0.112',
+      'Structure' => 'Tree',
+    ),
+    'Partner' =>
+    array (
+      0 =>
+      array (
+        'PartnerName' => 'Noliktava (galvenā)',
+      ),
+    ),
+  ),
+)
 ```
-<?xml version="1.0" encoding="utf-8" ?><dataroot><tjDocument Version="TJ5.5.101"></tjDocument><tjResponse Name="Partner" Operation="Read" Version="TJ7.0.112" Structure="Tree"><PartnerName>Test Customer</PartnerName><PartnerCode>CUST001</PartnerCode></Partner></tjResponse></dataroot>
-```
-#### Insert (Array)
-```
-[
-  [
-    "Key" => "ConvertedImportXML"
-    "Value" => "<?xml version="1.0"?><dataroot><tjDocument Version="TJ5.5.101" /><tjRequest Name="Partner" Operation="Insert" Version="TJ7.0.112" Structure="Tree"><Partner TagID="P1"><xPartnerCode>COST1</xPartnerCode><PartnerName>INITIUM</PartnerName><ddsad>dasdas</ddsad><PartnerAddress TagID="PA1"><AddressStreet>Test</AddressStreet><AddressPostalCode>LV-4101</AddressPostalCode><AddressCity>Test</AddressCity><AddressCountryCode>LV</AddressCountryCode></PartnerAddress></Partner></tjRequest></dataroot>"
-  ]
-]
-```
-
-
 
 ## Filter Types
 
@@ -179,7 +375,7 @@ new FilterGreaterThan('Quantity', 0)
 
 ## Error Handling
 Always wrap API calls with try-catch blocks to handle HTTP errors or XML parsing issues.
-If response from API encounters an empty or invalid raw string before attempting to parse XML, it will return `null`.
+If response from API encounters an empty or invalid raw string before attempting to parse XML, it will return empty `array`.
 
 ```php
 try {
@@ -188,13 +384,13 @@ try {
     if (!empty($response)) {
         // Do work
     }
-    else {
-       
+    elseif(count($response > 1)) {
+       // Has errors
     }
 
-} catch (\GuzzleHttp\Exception\GuzzleException $e) { // Catch Guzzle HTTP errors
+} catch (\GuzzleHttp\Exception\GuzzleException $e) { 
     echo "HTTP Request Error: " . $e->getMessage() . "\n";
-} catch (\Exception $e) { // Catch any other general errors
+} catch (\Exception $e) { 
     echo "An unexpected error occurred: " . $e->getMessage() . "\n";
 }
 ```

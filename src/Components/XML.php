@@ -32,12 +32,12 @@ class XML
                 continue;
             }
 
-            $xml .= "<$key>" . htmlspecialchars((string)$value) . "</$key>\n";
+            $xml .= "<$key>" . htmlspecialchars((string)$value) . "</$key>";
         }
 
         if ($tag) {
-            $tagLine = $index !== null ? "<$tag TagID=\"$index\">\n" : "<$tag>\n";
-            return $tagLine . $xml . "</$tag>\n";
+            $tagLine = $index !== null ? "<$tag TagID=\"$index\">" : "<$tag>";
+            return $tagLine . $xml . "</$tag>";
         }
 
         return $xml;
@@ -60,19 +60,49 @@ class XML
         })->implode("");
     }
 
-    public static function prepareFields(array $fields):string
+    private static function generateFieldXml(mixed $fieldDefinition): string
     {
-        return collect($fields)->map(function ($field, $key) {
-            if (is_array($field)) {
-                $fieldName = $key;
-                $nestedFields = collect($field)->map(function ($nestedField) {
-                    return "<Field Name=\"$nestedField\"/>";
-                })->implode("");
-                return "<$fieldName>$nestedFields</$fieldName>";
-            } else {
-                return "<Field Name=\"$field\"/>";
+        if (is_string($fieldDefinition)) {
+            return "<Field Name=\"" . htmlspecialchars($fieldDefinition, ENT_XML1) . "\"/>";
+        }
+
+        if (is_array($fieldDefinition) && isset($fieldDefinition['name'])) {
+            // Sortable field: ['name' => 'Name', 'sort' => 'Asc', 'sortLevel' => 1]
+            $fieldName = htmlspecialchars($fieldDefinition['name'], ENT_XML1);
+            $attributes = "Name=\"$fieldName\"";
+            if (isset($fieldDefinition['sort'])) {
+                $sortOrder = htmlspecialchars($fieldDefinition['sort'], ENT_XML1);
+                if (in_array($sortOrder, ['Asc', 'Desc'], true)) {
+                    $attributes .= " Sort=\"$sortOrder\"";
+                }
             }
-        })->implode("");
+            if (isset($fieldDefinition['sortLevel'])) {
+                $sortLevelVal = filter_var($fieldDefinition['sortLevel'], FILTER_VALIDATE_INT);
+                if ($sortLevelVal !== false && $sortLevelVal > 0) {
+                    $attributes .= " SortLevel=\"$sortLevelVal\"";
+                }
+            }
+            return "<Field $attributes/>";
+        }
+        return '';
     }
 
+    public static function prepareFields(array $fields): string
+    {
+        return collect($fields)->map(function ($fieldValue, $fieldKey) {
+
+            if (is_string($fieldKey) && !is_numeric($fieldKey) && is_array($fieldValue) && !isset($fieldValue['name'])) {
+                $groupTagName = htmlspecialchars($fieldKey, ENT_XML1);
+
+                $nestedFieldsXml = self::prepareFields($fieldValue);
+                if (!empty($nestedFieldsXml)) {
+                    return "<$groupTagName>$nestedFieldsXml</$groupTagName>";
+                }
+                return '';
+            }
+         else {
+                return self::generateFieldXml($fieldValue);
+            }
+        })->filter()->implode("");
+    }
 }

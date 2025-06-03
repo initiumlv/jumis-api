@@ -4,6 +4,7 @@ namespace Initium\Jumis\Api;
 
 use GuzzleHttp\Client;
 
+use GuzzleHttp\Exception\GuzzleException;
 use Initium\Jumis\Api\Components\XML;
 
 
@@ -80,19 +81,25 @@ class JumisAPIService
     /**
      * Sends a 'Read' operation request to the API.
      *
-     * @param string $dataBlack The name of the datablock to read from.
-     * @param array $fields An array of fields to retrieve.
+     * @param string $dataBlock The name of the datablock to read from (e.g., 'Product', 'Partner').
+     * @param array $fields An array of field definitions. Each definition can be:
+     *                      - A string: Field name (e.g., 'ProductName').
+     *                      - An array for sorting: ['name' => 'ProductCode', 'sort' => 'Asc', 'sortLevel' => 1].
+     *                          'sort' can be 'Asc' or 'Desc'. 'sortLevel' must be a positive integer starting from 1.
+     *                      - An associative array for grouped fields: ['GroupName' => [
+     *                            'SimpleFieldInGroup',
+     *                            ['name' => 'SortableFieldInGroup', 'sort' => 'Desc', 'sortLevel' => 1]
+     *                        ]].
      * @param array $filters An array of filters to apply to the query.
      * @param string|null $requestId An optional request ID.
      * @param array $flags An array of flags for the read operation. Possible flags include:
-     *                     'ReturnID' => 1, 'ReturnSync' => 1, 'Read' => 'All'.
+     *                     ReturnID, ReturnSync, Read => All.
      * @return mixed The parsed XML response from the API as an array, or null on failure before parsing.
-     * @throws \Exception If there is an error parsing the XML response.
+     * @throws \Exception|GuzzleException If there is an error parsing the XML response.
      */
-    public function read(string $dataBlack, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
+    public function read(string $dataBlock, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
     {
         $fields = XML::prepareFields($fields);
-
         $filters = XML::prepareFilters($filters);
 
         if (empty($filters)) {
@@ -107,7 +114,7 @@ class JumisAPIService
         }
 
         $attributes = [
-            'Name' => $dataBlack,
+            'Name' => $dataBlock,
             'Operation' => 'Read',
             'Version' => $this->requestVersion,
             'Structure' => 'Tree'
@@ -146,7 +153,7 @@ XML;
      * @param array $fields An array of fields and their values to insert.
      * @param string|null $requestId An optional request ID.
      * @return mixed The parsed XML response from the API as an array, or null on failure before parsing.
-     * @throws \Exception If there is an error parsing the XML response.
+     * @throws \Exception|GuzzleException If there is an error parsing the XML response.
      */
     public function insert(string $dataBlock, array $fields, ?string $requestId = null): mixed
     {
@@ -154,7 +161,8 @@ XML;
             'Name' => $dataBlock,
             'Operation' => 'Insert',
             'Version' => $this->requestVersion,
-            'Structure' => 'Tree'
+            'Structure' => 'Tree',
+
         ];
 
         if ($requestId) {
@@ -182,7 +190,7 @@ XML;
      * @param string $xml The XML request string.
      * @param string $operation The API operation (e.g., 'Read', 'Insert').
      * @return mixed The parsed XML response from the API as an array, or null on failure before parsing.
-     * @throws \GuzzleHttp\Exception\GuzzleException If the HTTP request fails.
+     * @throws GuzzleException If the HTTP request fails.
      * @throws \Exception If there is an error parsing the XML response.
      */
     protected function sendRequest(string $xml, string $operation): mixed
@@ -204,17 +212,73 @@ XML;
             'json' => $requestData,
         ]);
 
-        return $this->parseXmlResponse($response->getBody()->getContents());
+        return $this->parseResponse($response->getBody()->getContents(), $operation);
 
     }
 
     /**
-     * Parses the raw JSON response string from the API.
+     * Parses the raw response string from the API.
      *
-     * @param string $raw The raw response string, potentially JSON-encoded XML.
+     * @param string $raw The raw response string.
+     * @return array The parsed data, always as an array.
      */
-    protected function parseXmlResponse(string $raw) {
+    protected function parseResponse(string $raw, string $operation): array
+    {
 
-        return json_decode($raw, true);
+
+
+        if (empty($raw)) {
+            return [];
+        }
+
+        $result = json_decode($raw, true);
+
+
+        if ($operation === 'Read') {
+
+            libxml_use_internal_errors(true);
+            $xmlElement = simplexml_load_string($result);
+            libxml_clear_errors();
+
+            if ($xmlElement !== false) {
+
+                $parsedArray = json_decode(json_encode($xmlElement), true);
+
+                if (is_array($parsedArray)) {
+                    $result = $parsedArray;
+                }
+
+            }
+        }
+        else
+        {
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
+                return [];
+            }
+
+            if (isset($result[0]['Value']) && is_array($result[0]) && is_string($result[0]['Value'])) {
+                $xmlString = $result[0]['Value']; // Store the original XML string
+
+                // No try-catch block here as per user's last direct update.
+                // Errors from simplexml_load_string are handled by checking its return value.
+                libxml_use_internal_errors(true);
+                $xmlElement = simplexml_load_string($xmlString);
+                libxml_clear_errors();
+
+                if ($xmlElement !== false) {
+
+                    $parsedArray = json_decode(json_encode($xmlElement), true);
+
+                    if (is_array($parsedArray)) {
+                        $result[0]['Value'] = $parsedArray;
+                    }
+
+                }
+            }
+
+        }
+
+
+        return $result;
     }
 }
