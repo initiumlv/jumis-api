@@ -22,7 +22,7 @@ class JumisAPIService
 
     public static function make(): JumisAPIService
     {
-        return new static(config('jumis.url'),config('jumis.username'),config('jumis.password'),config('jumis.database'),config('jumis.apikey'),config('jumis.guzzle'));
+        return new static(config('jumis.url'), config('jumis.username'), config('jumis.password'), config('jumis.database'), config('jumis.apikey'), config('jumis.guzzle'));
     }
 
     /**
@@ -108,8 +108,7 @@ class JumisAPIService
 
         if (!empty($flags)) {// Flags: ReturnID = 1,ReturnSync = 1, Read = All
             $flags = XML::prepareAttributes($flags);
-        }
-        else {
+        } else {
             $flags = '';
         }
 
@@ -170,7 +169,7 @@ XML;
         }
 
         $attributes = XML::prepareAttributes($attributes);
-        $response = XML::buildXmlElements($fields,$dataBlock);
+        $response = XML::buildXmlElements($fields, $dataBlock);
 
         $xml = <<<XML
 <?xml version="1.0" ?>
@@ -226,7 +225,6 @@ XML;
     {
 
 
-
         if (empty($raw)) {
             return [];
         }
@@ -249,20 +247,15 @@ XML;
                 }
 
             }
-        }
-        else
-        {
+        } else {
             if (json_last_error() !== JSON_ERROR_NONE || !is_array($result)) {
                 return [];
             }
 
             if (isset($result[0]['Value']) && is_array($result[0]) && is_string($result[0]['Value'])) {
-                $xmlString = $result[0]['Value']; // Store the original XML string
 
-                // No try-catch block here as per user's last direct update.
-                // Errors from simplexml_load_string are handled by checking its return value.
                 libxml_use_internal_errors(true);
-                $xmlElement = simplexml_load_string($xmlString);
+                $xmlElement = simplexml_load_string($result[0]['Value']);
                 libxml_clear_errors();
 
                 if ($xmlElement !== false) {
@@ -277,8 +270,6 @@ XML;
             }
 
         }
-
-
         return $result;
     }
 }
