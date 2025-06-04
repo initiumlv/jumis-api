@@ -8,6 +8,10 @@ class XML
 {
     public static function prepareAttributes(array $attrs): string
     {
+        if (empty($attrs)) {
+            return '';
+        }
+
         return collect($attrs)
             ->map(fn($v, $k) => $v === null ? '' : "$k=\"$v\"")
             ->filter()
@@ -45,6 +49,10 @@ class XML
 
     public static function prepareFilters(array $filters): string
     {
+        if (empty($filters)) {
+            return '';
+        }
+
         return collect($filters)->map(function ($filter) {
             if ($filter instanceof Filter) {
                 $filter = $filter->toArray();

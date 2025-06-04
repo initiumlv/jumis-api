@@ -43,14 +43,9 @@ $api = new JumisAPIService(
     password: $_ENV['JUMIS_API_PASSWORD'],
     database: $_ENV['JUMIS_API_DATABASE'],
     apikey: $_ENV['JUMIS_API_KEY'],
+    documentVersion: 'TJ5.5.101',guzzleOptions: []
 );
 
-
-$api->setDocumentVersion('TJ5.5.101');
-$api->setRequestVersion('TJ7.0.112');
-
-
-// Invalid insert data
 $partnerXml = [
     [
         'PartnerCode' => uniqid('PHP_VALID_'),

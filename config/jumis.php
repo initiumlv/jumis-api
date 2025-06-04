@@ -31,17 +31,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | API Versions per Block
+    | Document Version
     |--------------------------------------------------------------------------
     |
-    | You can specify different API request versions for different data blocks.
-    | The ApiService can then be adapted to use these versions accordingly.
+    | Default document version
     |
     */
-    'versions' => [
-        'Product' => 'TJ5.5.101',
-        'Partner' => 'TJ7.0.112',
-        'FinancialDoc' => 'TJ7.0.112',
-        'StoreDoc' => 'TJ5.5.125',
-    ],
+    'document_version' => 'TJ5.5.101',
 ];

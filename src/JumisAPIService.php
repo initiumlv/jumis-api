@@ -11,38 +11,44 @@ use Initium\Jumis\Api\Components\XML;
 
 class JumisAPIService
 {
-    protected string $username;
-    protected string $password;
-    protected string $database;
-    protected string $apikey;
+
     protected string $baseEndpoint;
-    protected string $documentVersion = 'TJ5.5.101';
-    protected string $requestVersion = 'TJ5.5.101';
+    protected ?string $requestVersion = null;
+
+    protected string $structure = 'Tree';
 
     protected Client $client;
 
+    protected static array $requestVersions = [
+        'Product' => 'TJ5.5.101',
+        'Partner' => 'TJ7.0.112',
+        'FinancialDoc' => 'TJ7.0.112',
+        'StoreDoc' => 'TJ5.5.125',
+    ];
+
     public static function make(): JumisAPIService
     {
-        return new static(config('jumis.url'), config('jumis.username'), config('jumis.password'), config('jumis.database'), config('jumis.apikey'), config('jumis.guzzle'));
+        return new static(config('jumis.url'),
+            config('jumis.username'),
+            config('jumis.password'),
+            config('jumis.database'),
+            config('jumis.apikey'),
+            config('jumis.document_version'),
+            config('jumis.guzzle'));
     }
 
-    /**
-     * ApiService constructor.
-     *
-     * @param string $endpoint The base API endpoint URL.
-     * @param string $username The API username.
-     * @param string $password The API password.
-     * @param string $database The API database name (optional).
-     * @param string $apikey The API key (optional).
-     * @param array $guzzleOptions Additional options for the Guzzle HTTP client (optional).
-     */
-    public function __construct(string $endpoint, string $username, string $password, string $database = '', string $apikey = '', array $guzzleOptions = [])
+    public static function addVersion(string $dataBlock, string $version): void
+    {
+        self::$requestVersions[$dataBlock] = $version;
+    }
+
+
+    public function __construct(string           $endpoint, protected string $username, protected string $password,
+                                protected string $database, protected string $apikey, protected string $documentVersion,
+                                array            $guzzleOptions = [])
     {
         $this->baseEndpoint = rtrim($endpoint, '/');
-        $this->username = $username;
-        $this->password = $password;
-        $this->database = $database;
-        $this->apikey = $apikey;
+
         $this->client = new Client($guzzleOptions);
     }
 
@@ -66,6 +72,15 @@ class JumisAPIService
     public function setRequestVersion(string $version): void
     {
         $this->requestVersion = $version;
+    }
+
+    public function setStructure(string $structure): void
+    {
+        if (!in_array($structure, ['Tree', 'Sheet'])) {
+            throw new JumisException('Invalid request structure has been set!');
+        }
+
+        $this->structure = $structure;
     }
 
     /**
@@ -100,24 +115,54 @@ class JumisAPIService
      */
     public function read(string $dataBlock, array $fields = [], array $filters = [], ?string $requestId = null, array $flags = []): mixed
     {
+        if (empty($dataBlock)) {
+            throw new JumisException('You must provide a data block to read from API!');
+        }
+
+        if (empty($fields)) {
+            throw new JumisException('You must provide a fields array to read from API!');
+        }
+
+        $allowedFlags = ['Read', 'ReturnID', 'ReturnSync'];
+        $unknownFlags = array_diff(array_keys($flags), $allowedFlags);
+
+        if (!empty($unknownFlags)) {
+            throw new JumisException('Unknown flags provided: ' . implode(', ', $unknownFlags));
+        }
+
+        /*
+         * Check if a specific request version is set, if not attempt to load
+         * default values from a configuration file
+         */
+        if ($this->requestVersion == null) {
+            $this->requestVersion = self::$requestVersions[$dataBlock] ?? null;
+        }
+
+        /*
+         * If the default value from a configuration file cannot be loaded, throws an exception
+         * request value must be set for each request
+         */
+        if ($this->requestVersion === null) {
+            throw new JumisException('Jumis API Request version is not set!');
+        }
+
         $fields = XML::prepareFields($fields);
         $filters = XML::prepareFilters($filters);
 
+        /*
+         * When no filters are passed flag Read all always must be set
+         */
         if (empty($filters)) {
             $flags['Read'] = 'All';
         }
 
-        if (!empty($flags)) {// Flags: ReturnID = 1,ReturnSync = 1, Read = All
-            $flags = XML::prepareAttributes($flags);
-        } else {
-            $flags = '';
-        }
+        $flags = XML::prepareAttributes($flags);
 
         $attributes = [
             'Name' => $dataBlock,
             'Operation' => 'Read',
             'Version' => $this->requestVersion,
-            'Structure' => 'Tree'
+            'Structure' => $this->structure,
         ];
 
         if ($requestId) {
@@ -142,7 +187,6 @@ $fields
 </dataroot>
 XML;
 
-
         return $this->sendRequest($response, 'Read');
     }
 
@@ -157,11 +201,37 @@ XML;
      */
     public function insert(string $dataBlock, array $fields, ?string $requestId = null): mixed
     {
+        if (empty($dataBlock)) {
+            throw new JumisException('You must provide a data block to insert to API!');
+        }
+
+        if (empty($fields)) {
+            throw new JumisException('You must provide a fields array to insert to API!');
+        }
+
+
+        /*
+         * Check if a specific request version is set, if not attempt to load
+         * default values from a configuration file
+         */
+        if ($this->requestVersion == null) {
+            $this->requestVersion = self::$requestVersions[$dataBlock] ?? null;
+        }
+
+        /*
+         * If the default value from a configuration file cannot be loaded, throws an exception
+         * request value must be set for each request
+         */
+        if ($this->requestVersion === null) {
+            throw new JumisException('Jumis API Request version is not set!');
+        }
+
+
         $attributes = [
             'Name' => $dataBlock,
             'Operation' => 'Insert',
             'Version' => $this->requestVersion,
-            'Structure' => 'Tree',
+            'Structure' => $this->structure,
 
         ];
 

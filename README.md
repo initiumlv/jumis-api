@@ -231,7 +231,7 @@ array (
 ### Invalid Insert (With invalid relationship by name)
 
 ```php
-$partnerXml = [
+$partners = [
     [
         'PartnerCode' => uniqid('PHP_VALID_'),
         'PartnerName' => 'Test Partner ' . date('Y-m-d H:i:s'),
@@ -246,6 +246,7 @@ $partnerXml = [
     ],
 ];
 
+$response = $api->insert('Partner', $partners);
 
 //Response (Will return multiple items if it has errors)
 
@@ -298,7 +299,7 @@ $partnerXml = [
                         ),
                 ),
         ),
-    1 =>
+    1 => // Errors start here
         array (
             'Key' => 'P1',
             'Value' => 'Čipsis',
@@ -373,7 +374,7 @@ new FilterLessThan('Price', 100)
 new FilterGreaterThan('Quantity', 0)
 ```
 
-## Error Handling
+## Example with error handling
 Always wrap API calls with try-catch blocks to handle HTTP errors or XML parsing issues.
 If response from API encounters an empty or invalid raw string before attempting to parse XML, it will return empty `array`.
 
@@ -381,38 +382,111 @@ If response from API encounters an empty or invalid raw string before attempting
 try {
     $response = $api->insert('Partner', ['PartnerCode' => 'Test']);
     
-    if (empty($response)) {
-        // No data returned. Invalid API Response.
+    if (isset($response['status'])) {
+        // wrong username, password or database provided
+        return;
     }
-    
+
     // Has errors in fields or connection
     if(count($response > 1)) {
-      
-       if (isset($response['status']) && $response['status'] === 'error') {
-           // Connection error
-       }
-       else {
-           // General field insert error
+
+       // Iterate over all returned errors
+       for ($i = 1; $i < count($response); $i++) {
+            echo $response[$i]['Key'] .' = ' $response[$i]['Value'] . PHP_EOL;
        }
        
        return;
     }
     
-    if (isset($response[0]['Value']) && is_array($response[0]['Value'])) {
-        // Do work
-    }
-    else {
+    if (!isset($response[0]['Value']) && !is_array($response[0]['Value'])) {
         // Unexpected response
+        return;
     }
-
-
-} catch (\GuzzleHttp\Exception\GuzzleException $e) { 
-    echo "HTTP Request Error: " . $e->getMessage() . "\n";
+    
+    
+    print_r($response);
+    
+    //
+    // Read Inserted data
+    //
+    
+    $response = $api->read('Partner', ['PartnerCode'],[
+        new \Initium\Jumis\Api\Filters\FilterEqual('PartnerCode','Test')
+    ]);
+    
+    if (isset($response['status'])) {
+        // wrong username, password or database provided
+        return;
+    }
+        
+    if (empty($response)) {
+        // No data returned.
+        return;
+    }
+    
+    print_r($response);
+    
+    
+    //
+    // Read data and sort
+    //
+    
+    $fields = [
+        'PartnerCode', // Basic Field
+        ['name' => 'PartnerName','sort' => 'Asc', 'sortLevel' => 1]
+        'PartnerAddress' => [ // Selecting related data
+            'AddressCity',
+        ] 
+    ]
+    
+    $response = $api->read('Partner', ,[
+        new \Initium\Jumis\Api\Filters\FilterEqual('PartnerCode','Test')
+    ]);
+    
+    if (isset($response['status'])) {
+        // wrong username, password or database provided
+        return;
+    }
+        
+    if (empty($response)) {
+        // No data returned.
+        return;
+    }
+    
+    print_r($response);
+} 
+catch (\Initium\Jumis\Api\JumisException $e) { 
+    // Incorrect structures, fields, filters, flags, etc.
+}
+catch (\GuzzleHttp\Exception\GuzzleException $e) { 
+   // General Guzzle Exception
+   // Wrong Jumis API key provided
 } catch (\Exception $e) { 
-    echo "An unexpected error occurred: " . $e->getMessage() . "\n";
+    // General Exception
 }
 ```
 
 ## Documentation
 
 https://atbalsts.mansjumis.lv/hc/lv/articles/6482469051922-Jumis-REST-API-specifik%C4%81cija
+
+
+## MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or significant portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
