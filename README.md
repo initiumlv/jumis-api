@@ -13,7 +13,7 @@ A PHP library for integrating with Tildes Jumis ERP system's XML-based API.
 ### Basic Installation
 
 ```bash
-composer require initiumlv/jumis-api
+composer require initiumlv/laravel-jumis-rest-api
 ```
 
 
